@@ -181,5 +181,5 @@ MIT License – See LICENSE file for details.
 
 **Author**: speefak  
 **Version**: 2.1.2  
-**Created**: 2025  
+**Created**: 2026  
 **Last Update**: June 2026
