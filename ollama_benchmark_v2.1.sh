@@ -39,7 +39,7 @@
 #   - curl
 #
 # Author:      speefak
-# Version:     1.9
+# Version:     2.1
 # Created:     2025
 # Last update: June 2026
 #
