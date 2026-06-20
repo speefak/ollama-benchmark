@@ -66,7 +66,7 @@ DC_ROOT=$HOME/.ol-bench			      		# Working directory for logs and outputs
 LOG_FILE="$DC_ROOT/$(date +%F-%H%M%S)_ol-bench.log"	# Log file
 
 OLLAMA_MODEL_UNLOAD_DELAY=3				# Default for waiting llm unload 
-FASTMODE_TIMEOUT_DEFAULT=5
+FASTMODE_TIMEOUT_DEFAULT=15
 
 # ===========================================================================================================================
 # FUNCTIONS
