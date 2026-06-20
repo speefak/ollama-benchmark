@@ -60,10 +60,10 @@ MAX_ITER=10                           			# Number of iterations
 MODELS=()               	              		# Models (empty = interactive selection)
 MAX_MODEL_NAME_LENGTH=25              			# Maximum model name length in output
 VERBOSE_MODE=0                        			# 1 = thinking + response im Terminal ausgeben (ins Logfile mitgeschrieben)
-SEP="$(printf '%0.s─' {1..199})"			# Seperatorline lenght
+SEP="$(printf '%0.s─' {1..182})"			# Seperatorline lenght
 
 DC_ROOT=$HOME/.ol-bench			      		# Working directory for logs and outputs
-LOG_FILE="$DC_ROOT/$(date +%F-%H%M)_ol-bench.log"	# Log file
+LOG_FILE="$DC_ROOT/$(date +%F-%H%M%S)_ol-bench.log"	# Log file
 
 OLLAMA_MODEL_UNLOAD_DELAY=3				# Default for waiting llm unload 
 CPU_GPU_LOAD_DELAY=10
@@ -461,26 +461,19 @@ fi
 
 #----------------------------------------------------------------------------------------------------------------------------
 
-# Set Vars for fast benchmark	
-# response time = 1
-# LLloadtime über f <zahl> anpassbar 
-
-
-#----------------------------------------------------------------------------------------------------------------------------
-
 # Print value header
 print_line ""
 print_line " GPU (VRAM)  : ${GPU_MODEL} (${GPU_VRAM})"
 print_line " CPU (RAM)   : ${CPU_MODEL} (${CPU_RAM})"
 print_line
-print_line " 🚀 Starting Ollama Context Benchmark | $(date +%F-%H%M)"
+print_line " 🚀 Starting Ollama Context Benchmark | $(date +%F-%H:%M:%S)"
 print_line " Models      : ${MODELS[*]}"
 print_line " Start ctx   : $START_CTX"
 print_line " Increase    : $CTX_RAISE_INFO"
 print_line " Iterations  : $MAX_ITER"
 print_line " Timeout L   : ${CPU_GPU_LOAD_DELAY}s"
 print_line " Timeout R   : ${MAX_TIME}s"
-print_line " Prompt      : \"$PROMPT_BENCHMARK\""
+if [[ -z $FASTMODE ]]; then print_line " Prompt      : \"$PROMPT_BENCHMARK\"";else print_line " Prompt      : None (fastmode active)" ;fi
 print_line " Logfile     : $LOG_FILE"
 [[ "$VERBOSE_MODE" -eq 1 ]] && print_line " Verbose     : thinking + response will be displayed in terminal and logfile"
 print_line ""
@@ -534,7 +527,7 @@ for MODEL in "${MODELS[@]}"; do
 	ITER_T=$(printf "%3d/%-3d" "$GLOBAL_RUN" "$TOTAL_RUNS")
 
 	# skip Model loop if $BREAK_MODEL_LOOP == true ist set
-	if [[ $BREAK_MODEL_LOOP == true ]] || [[ -z $FASTMODE ]]; then
+	if [[ $BREAK_MODEL_LOOP == true ]]; then
 	    ((iter++))
 	    ollama stop "$MODEL"        
 	    continue
@@ -543,26 +536,25 @@ for MODEL in "${MODELS[@]}"; do
 	# print proccessing line
 	printf "%7s | %7s | %-${MAX_MODEL_NAME_LENGTH}s | %6s | %15s | %4s   %-4s | %-7s | %-7s | %-7s | %-10s | %-12s | %-10s | %-10s | %s" \
         "$ITER_M" "$ITER_T" "$MODEL_SHORT" "$ctx" ""	
-	
+
 	# start ollama benchmark (no prompt for fastmode)
 	if [[ -n $FASTMODE ]]; then
-           OUTPUT=$(curl -s --max-time "${MAX_TIME}" "${OLLAMA_API}/api/generate" \
-                -H "Content-Type: application/json" \
-                -d "{
-                    \"model\": \"${MODEL}\",
-                    \"stream\": false,
-                    \"options\": { \"num_ctx\": ${ctx} }
-                }")
+	    JSON_PAYLOAD=$(jq -n \
+		--arg model "$MODEL" \
+		--argjson ctx "$ctx" \
+		'{model:$model,stream:false,options:{num_ctx:$ctx}}')
 	else
-            OUTPUT=$(curl -s --max-time "${MAX_TIME}" "${OLLAMA_API}/api/generate" \
-                -H "Content-Type: application/json" \
-                -d "{
-                    \"model\": \"${MODEL}\",
-                    \"prompt\": \"${PROMPT_BENCHMARK}\",
-                    \"stream\": false,
-                    \"options\": { \"num_ctx\": ${ctx} }
-                }")
+	    JSON_PAYLOAD=$(jq -n \
+		--arg model "$MODEL" \
+		--arg prompt "$PROMPT_BENCHMARK" \
+		--argjson ctx "$ctx" \
+		'{model:$model,prompt:$prompt,stream:false,options:{num_ctx:$ctx}}')
 	fi
+
+	OUTPUT=$(curl -s --max-time "${MAX_TIME}" \
+	    "${OLLAMA_API}/api/generate" \
+	    -H "Content-Type: application/json" \
+	    -d "$JSON_PAYLOAD")
 
         # get ollama ps values
 	PS_LINE=$(ollama ps 2>/dev/null | grep "^${MODEL} ")
@@ -735,5 +727,8 @@ exit 0
 #TODO Option für benchmark reihenfolge sortiert nach  modelname, model größe
 
 #TODO Modelliste mit allen verfügbaren infos erstellen ???
+
+# wenn im FASTMODE (-f) meldung kommt : No response (timeout after 4s or connection error) (GandalfBaum/deepseek_r1-claude3.7:latest ) , dann -f wert zu klein
+
 
 
