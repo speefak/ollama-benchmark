@@ -54,7 +54,7 @@ PROMPT_BENCHMARK="How does a LargeLanguageModel work (Language:DE, max 500 words
 OLLAMA_API="http://localhost:11434"   			# Ollama REST API endpoint
 MAX_TIME=300                          			# curl max-time in seconds
 START_CTX=4096                        			# Starting context size in tokens
-CTX_RAISE=10                          			# Increase per iteration
+CTX_RAISE=100                         			# Increase xx% per iteration
 CTX_RAISE_MODE="percent"              			# "percent" oder "absolute"
 MAX_ITER=10                           			# Number of iterations
 MODELS=()               	              		# Models (empty = interactive selection)
